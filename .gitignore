@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+/backend/.DS_Store
+# Node / generale
+/node_modules/
+/package-lock.json
+/package.json
+
+# Frontend (Angular)
+/frontend/.angular/
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.cache/
+/frontend/proxy.conf.json
+/frontend/tsconfig.app.json
+/frontend/tsconfig.json
+/frontend/tsconfig.spec.json
+/frontend/package-lock.json
+
+# Backend
+/backend/node_modules/
+/backend/dist/
+/backend/.env
+/backend/prisma/migrations/
+
