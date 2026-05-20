@@ -52,7 +52,7 @@ export class AuthService {
       throw new UnauthorizedException('Credenziali errate');
     }
 
-    if (!user.isActive) {
+    if (!user.attivo) {
       throw new UnauthorizedException('Account non attivato');
     }
 
@@ -111,7 +111,7 @@ export class AuthService {
       throw new UnauthorizedException('Utente non trovato');
     }
 
-    if (!user.isActive) {
+    if (!user.attivo) {
       await this.refreshTokenService.revokeByUserId(user.id);
       throw new UnauthorizedException('Account disattivato');
     }

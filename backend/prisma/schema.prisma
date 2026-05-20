@@ -1,22 +1,44 @@
 generator client {
-  provider   = "prisma-client-js"
-  engineType = "library"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-model TUtente {
-  id       Int     @id @default(autoincrement())
-  email    String
-  password String
-  nome     String
-  cognome  String
-  isActive Boolean @default(false)
-  role     String  @default("USER")
+// ─────────────────────────────────────────
+// RUOLI E UTENTI
+// ─────────────────────────────────────────
 
-  refreshTokens RefreshToken[]
+/* TODO: HO RIEMPITO IL DB CON DEI DATI, BISGONA PROVARE AD INIZIARE CON LE PRIME API CHE PERMETTONO L'ORDINAZIONE 
+ * E CHE GESTISCONO EVENTUALI RIMOZIONI O ALTRO, VOGLIO AGGIUNGERE UNA METODOLOGIA TRAMITE AI DI ORDINARE LA PIZZA 
+ * CHE METTE IN UN CERTO FORMATO L'ORDINAZIONE FATTA DALL'UTENTE IN MODO DA POTERLA GESTIRE COME SE FOSSE UN TXT 
+ */
+model Ruolo {
+  id        Int      @id @default(autoincrement())
+  nome      String   @unique  // forno | cassa | fattorino | banco
+  permessi  String[]
+  createdAt DateTime @default(now())
+
+  utenti User[]
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  nome      String
+  cognome   String
+  telefono  String
+  attivo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ruoloId Int
+  ruolo   Ruolo @relation(fields: [ruoloId], references: [id])
+
+  prenotazioniAssegnate Prenotazione[] @relation("FattorinoPrenotazioni")
+  refreshTokens         RefreshToken[] 
 }
 
 model RefreshToken {
@@ -27,5 +49,182 @@ model RefreshToken {
   isRevoked Boolean? @default(false)
   createdAt DateTime
 
-  user TUtente @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+}
+// ─────────────────────────────────────────
+// MENU
+// ─────────────────────────────────────────
+
+model MenuItem {
+  id          Int           @id @default(autoincrement())
+  nome        String
+  descrizione String?
+  categoria   CategoriaMenu
+  prezzo      Decimal       @db.Decimal(10, 2)
+  disponibile Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  ingredienti MenuItemIngredienti[]
+  ordineItems OrdineItem[]
+}
+
+enum CategoriaMenu {
+  PIZZA
+  FRITTO
+  AGGIUNTA
+  BEVANDA
+}
+
+// ─────────────────────────────────────────
+// INGREDIENTI
+// ─────────────────────────────────────────
+
+model Ingrediente {
+  id          Int      @id @default(autoincrement())
+  nome        String   @unique
+  prezzo      Decimal  @db.Decimal(10, 2) @default(0)
+  disponibile Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  menuItems  MenuItemIngredienti[]
+  aggiunte   OrdineItemAggiunta[]
+  rimozioni  OrdineItemRimozione[]
+}
+
+// Tabella ponte: ingredienti di default di una pizza nel menu
+model MenuItemIngredienti {
+  menuItemId    Int
+  ingredienteId Int
+  menuItem      MenuItem    @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  ingrediente   Ingrediente @relation(fields: [ingredienteId], references: [id])
+
+  @@id([menuItemId, ingredienteId])
+}
+
+// ─────────────────────────────────────────
+// FASCE ORARIE
+// ─────────────────────────────────────────
+
+model FasciaOraria {
+  id        Int     @id @default(autoincrement())
+  orario    String
+  maxOrdini Int     @default(10)
+  attiva    Boolean @default(true)
+
+  prenotazioni Prenotazione[]
+}
+
+// ─────────────────────────────────────────
+// PRENOTAZIONI
+// ─────────────────────────────────────────
+
+model Prenotazione {
+  id                    Int               @id @default(autoincrement())
+  nominativo            String
+  telefono              String
+  modalita              ModalitaConsegna
+  stato                 StatoPrenotazione @default(RICEVUTA)
+  note                  String?
+  totale                Decimal           @db.Decimal(10, 2)
+  giornoPrenotazione    DateTime
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  // Indirizzo (solo se modalita = DOMICILIO)
+  via                   String?
+  civico                String?
+  citta                 String?
+  noteIndirizzo         String?
+
+  fasciaOrariaId        Int
+  fasciaOraria          FasciaOraria @relation(fields: [fasciaOrariaId], references: [id])
+
+  fattorinoId           Int?
+  fattorino             User? @relation("FattorinoPrenotazioni", fields: [fattorinoId], references: [id])
+
+  pagamento             Pagamento?
+  items                 OrdineItem[]
+}
+
+enum ModalitaConsegna {
+  ASPORTO
+  DOMICILIO
+}
+
+enum StatoPrenotazione {
+  RICEVUTA
+  IN_LAVORAZIONE
+  PRONTA
+  IN_CONSEGNA
+  CONSEGNATA
+  ANNULLATA
+}
+
+// ─────────────────────────────────────────
+// ITEMS ORDINE
+// ─────────────────────────────────────────
+
+model OrdineItem {
+  id                Int           @id @default(autoincrement())
+  quantita          Int           @default(1)
+  note              String?
+
+  // Snapshot al momento dell'ordine
+  nomeSnapshot      String
+  prezzoSnapshot    Decimal       @db.Decimal(10, 2)
+  categoriaSnapshot CategoriaMenu
+
+  prenotazioneId Int
+  prenotazione   Prenotazione @relation(fields: [prenotazioneId], references: [id], onDelete: Cascade)
+
+  menuItemId Int
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+
+  aggiunte  OrdineItemAggiunta[]
+  rimozioni OrdineItemRimozione[]
+}
+
+// Ingredienti aggiunti rispetto alla pizza base
+model OrdineItemAggiunta {
+  id             Int         @id @default(autoincrement())
+  prezzoSnapshot Decimal     @db.Decimal(10, 2)
+
+  ordineItemId  Int
+  ordineItem    OrdineItem  @relation(fields: [ordineItemId], references: [id], onDelete: Cascade)
+
+  ingredienteId Int
+  ingrediente   Ingrediente @relation(fields: [ingredienteId], references: [id])
+}
+
+// Ingredienti rimossi rispetto alla pizza base
+model OrdineItemRimozione {
+  id Int @id @default(autoincrement())
+
+  ordineItemId  Int
+  ordineItem    OrdineItem  @relation(fields: [ordineItemId], references: [id], onDelete: Cascade)
+
+  ingredienteId Int
+  ingrediente   Ingrediente @relation(fields: [ingredienteId], references: [id])
+}
+
+// ─────────────────────────────────────────
+// PAGAMENTO
+// ─────────────────────────────────────────
+
+model Pagamento {
+  id        Int             @id @default(autoincrement())
+  metodo    MetodoPagamento
+  pagato    Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  prenotazioneId Int          @unique
+  prenotazione   Prenotazione @relation(fields: [prenotazioneId], references: [id], onDelete: Cascade)
+}
+
+enum MetodoPagamento {
+  CONTANTI
+  CARTA
+  ONLINE
 }

@@ -14,42 +14,63 @@ import { ZodParamPipe } from 'src/common/pipes/zod-param-pipe';
 import z from 'zod';
 import { AuthGuard } from '@nestjs/passport';
 
+@UseGuards(AuthGuard('jwt'))
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
-  @UseGuards(AuthGuard('jwt'))
-  findAll() {
-    return this.userService.findAll();
+  async findAll() {
+    const all = await this.userService.findAll();
+
+    return {
+      success: true,
+      data: all,
+    };
   }
 
   @Get('id/:id')
-  @UseGuards(AuthGuard('jwt'))
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.userService.findOne(id);
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    const one = await this.userService.findOne(id);
+
+    return {
+      success: true,
+      data: one,
+    };
   }
 
   @Get('email')
-  @UseGuards(AuthGuard('jwt'))
-  findByEmail(
+  async findByEmail(
     @Body('email', new ZodParamPipe(z.string().email())) email: string,
   ) {
-    return this.userService.findByEmail(email);
+    const byEmail = await this.userService.findByEmail(email);
+
+    return {
+      success: true,
+      data: byEmail,
+    };
   }
 
   @Patch(':id')
-  @UseGuards(AuthGuard('jwt'))
-  update(
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
   ) {
-    return this.userService.update(id, updateUserDto);
+    const updated = await this.userService.update(id, updateUserDto);
+
+    return {
+      success: true,
+      data: updated,
+    };
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard('jwt'))
-  remove(@Param('id') id: string) {
-    return this.userService.remove(+id);
+  async remove(@Param('id') id: string) {
+    const deleted = await this.userService.remove(+id);
+
+    return {
+      success: true,
+      data: deleted,
+    };
   }
 }

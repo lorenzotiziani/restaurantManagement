@@ -1,0 +1,6 @@
+-> find available in base alle fasce orarie fatto
+-> gestione prenotazioni
+-> poter mostrare il menu con scelta se mostrare solo bevante fritti o pizze, quindi un parametro in body
+-> crud ingredienti solo se sei ruolo cassa(lisa)
+-> gestire consegne con prenotazioni
+-> gestione ordine

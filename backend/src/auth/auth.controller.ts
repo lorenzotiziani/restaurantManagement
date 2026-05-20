@@ -3,11 +3,7 @@ import { AuthService } from './auth.service';
 import z from 'zod';
 import { RegisterUserDto } from 'src/user/dto/create-user.dto';
 import { ZodValidationPipe } from 'nestjs-zod';
-
-const LoginSchema = z.object({
-  email: z.string().email(),
-  password: z.string(),
-});
+import { LoginSchema } from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {

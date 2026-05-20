@@ -22,9 +22,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Errore interno del server';
 
+    // ← aggiunto: logga sempre l'errore reale
+    console.error('Exception caught:', exception);
+
     if (exception instanceof HttpException) {
       status = exception.getStatus();
-
       const res = exception.getResponse();
 
       if (typeof res === 'string') {
@@ -38,7 +40,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     response.status(status).json({
       success: false,
+      statusCode: status,
       error: message,
+      timestamp: new Date().toISOString(),
     });
   }
 }

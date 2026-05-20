@@ -24,6 +24,8 @@ export const UserBaseSchema = z.object({
   confirmPassword: passwordRequirements,
   nome: z.string().min(1),
   cognome: z.string().min(1),
+  telefono: z.e164().nonempty(),
+  ruoloId: z.number().positive(),
 });
 
 export const CreateUserSchema = UserBaseSchema.omit({

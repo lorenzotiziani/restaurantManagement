@@ -1,0 +1,65 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { MenuItemsService } from './menuItems.service';
+import { nuovoMenuItemsSchema } from './dto/menuItems.dto';
+import { ZodValidationPipe } from 'nestjs-zod';
+import z from 'zod';
+
+@UseGuards(AuthGuard('jwt'))
+@Controller('menu-items')
+export class MenuItemsController {
+  constructor(private readonly menuItemsService: MenuItemsService) {}
+
+  @Get()
+  async getMenuItems() {
+    const all = await this.menuItemsService.getMenuItems();
+
+    return {
+      message: 'success',
+      data: all,
+    };
+  }
+
+  @Post()
+  async createMenuItems(
+    @Body(new ZodValidationPipe(nuovoMenuItemsSchema))
+    body: z.infer<typeof nuovoMenuItemsSchema>,
+  ) {
+    const nuovoMenuItems = await this.menuItemsService.addMenuItem(body);
+
+    return {
+      message: 'success',
+      data: nuovoMenuItems,
+    };
+  }
+
+  @Patch(':id')
+  async updateMenuItems(
+    @Param('id') id: number,
+    @Body(new ZodValidationPipe(nuovoMenuItemsSchema))
+    body: z.infer<typeof nuovoMenuItemsSchema>,
+  ) {
+    const updated = await this.menuItemsService.updateMenuItem(id, body);
+    return {
+      message: 'success',
+      data: updated,
+    };
+  }
+
+  @Delete(':id')
+  async deleteMenuItems(@Param('id') id: number) {
+    await this.menuItemsService.deleteMenuItem(id);
+    return {
+      message: 'success',
+    };
+  }
+}

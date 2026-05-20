@@ -4,6 +4,9 @@ export interface User {
   password: string;
   nome: string;
   cognome: string;
-  role?: string;
-  isActive: boolean;
+  telefono: string;
+  attivo: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  ruoloId: number;
 }
