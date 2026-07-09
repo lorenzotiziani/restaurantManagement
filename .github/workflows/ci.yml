@@ -1,0 +1,91 @@
+name: CI pipeLine
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+# Annulla una run precedente ancora in corso sullo stesso ref (risparmia minuti CI)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # Backend NestJS: lint + typecheck/build (gate) + test (informativo, WIP)
+  # ----------------------------------------------------------------------------
+  backend:
+    name: Backend (NestJS)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Genera il Prisma Client (serve a typecheck/build: il codice importa @prisma/client)
+      - name: Prisma generate
+        run: npx prisma generate
+        env:
+          # generate non si connette, ma la datasource richiede la variabile
+          DATABASE_URL: postgresql://user:pass@localhost:5432/db?schema=public
+
+      - name: Lint
+        run: npx eslint src test
+
+      - name: Build (typecheck)
+        run: npm run build
+
+      # I test sono ancora stub auto-generati (dipendenze non risolte): non bloccano
+      # la pipeline finché non vengono scritti. Rimuovere continue-on-error quando pronti.
+      - name: Unit tests (WIP, non bloccante)
+        run: npm test
+        continue-on-error: true
+
+  # ----------------------------------------------------------------------------
+  # Frontend Angular: build di produzione (gate)
+  # ----------------------------------------------------------------------------
+  frontend:
+    name: Frontend (Angular)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      # Angular usa Karma+Chrome: richiede un browser headless. Abilitare quando
+      # ci saranno test veri, es.:
+      # - name: Unit tests
+      #   run: npm test -- --no-watch --no-progress --browsers=ChromeHeadless
