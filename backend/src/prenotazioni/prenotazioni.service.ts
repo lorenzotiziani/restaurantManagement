@@ -1,19 +1,52 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { CreatePrenotazioneDto } from './dto/create-prenotazioni.dto';
 import { UpdatePrenotazioniDto } from './dto/update-prenotazioni.dto';
 import { PrismaService } from 'prisma/prisma.service';
-import { Prenotazione } from '@prisma/client';
+import { Prenotazione, StatoPrenotazione } from '@prisma/client';
+
+/**
+ * Macchina a stati delle prenotazioni: per ogni stato, le transizioni consentite
+ * con i ruoli abilitati. Il ruolo 'cassa' (gestore) può eseguire qualsiasi
+ * transizione valida a prescindere da questa mappa.
+ */
+const TRANSIZIONI: Record<
+  StatoPrenotazione,
+  { a: StatoPrenotazione; ruoli: string[] }[]
+> = {
+  RICEVUTA: [
+    { a: 'IN_LAVORAZIONE', ruoli: ['forno'] },
+    { a: 'ANNULLATA', ruoli: ['cassa'] },
+  ],
+  IN_LAVORAZIONE: [
+    { a: 'PRONTA', ruoli: ['forno'] },
+    { a: 'ANNULLATA', ruoli: ['cassa'] },
+  ],
+  PRONTA: [
+    { a: 'IN_CONSEGNA', ruoli: ['fattorino', 'banco'] },
+    { a: 'ANNULLATA', ruoli: ['cassa'] },
+  ],
+  IN_CONSEGNA: [
+    { a: 'CONSEGNATA', ruoli: ['fattorino'] },
+    { a: 'ANNULLATA', ruoli: ['cassa'] },
+  ],
+  CONSEGNATA: [], // stato finale
+  ANNULLATA: [], // stato finale
+};
 
 @Injectable()
 export class PrenotazioniService {
   constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    return await this.prisma.prenotazione.findMany();
+    // Le prenotazioni annullate (soft delete) sono escluse dalla lista
+    return await this.prisma.prenotazione.findMany({
+      where: { stato: { not: 'ANNULLATA' } },
+    });
   }
 
   async findOne(id: number) {
@@ -160,8 +193,9 @@ export class PrenotazioniService {
     await this.isModificabile(prenotazione);
 
     // Estrai solo i campi scalari, escludi pagamento e items
+    // Lo stato NON è modificabile qui: le transizioni passano da changeStato()
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { pagamento, items, ...others } = dto;
+    const { pagamento, items, stato, ...others } = dto;
 
     return await this.prisma.prenotazione.update({
       where: { id: id },
@@ -169,7 +203,6 @@ export class PrenotazioniService {
         nominativo: others.nominativo,
         telefono: others.telefono,
         modalita: others.modalita,
-        stato: others.stato,
         note: others.note,
         giornoPrenotazione: others.giornoPrenotazione,
         fasciaOrariaId: others.fasciaOrariaId,
@@ -187,29 +220,66 @@ export class PrenotazioniService {
   }
 
   async remove(id: number) {
-    //cancello il pagamento collegato alla prenotazione
-    await this.prisma.pagamento.deleteMany({
-      where: {
-        prenotazioneId: id,
-      },
+    const prenotazione = await this.prisma.prenotazione.findUnique({
+      where: { id },
     });
 
-    //cancello l'ordine relativo alla prenotazione
-    await this.prisma.ordineItem.deleteMany({
-      where: {
-        prenotazioneId: id,
-      },
-    });
+    if (!prenotazione)
+      throw new NotFoundException(`Prenotazione ${id} non trovata`);
 
-    //cancello la prenotazione effettiva
-    const deleted = await this.prisma.prenotazione.delete({
-      where: {
-        id: id,
-      },
-    });
+    if (
+      prenotazione.stato === 'CONSEGNATA' ||
+      prenotazione.stato === 'ANNULLATA'
+    ) {
+      throw new BadRequestException(
+        `Impossibile annullare una prenotazione in stato ${prenotazione.stato}`,
+      );
+    }
 
-    return deleted;
+    // Soft delete: la prenotazione non viene cancellata, passa in stato ANNULLATA
+    return await this.prisma.prenotazione.update({
+      where: { id },
+      data: { stato: 'ANNULLATA' },
+    });
   }
+  /**
+   * Avanza lo stato di una prenotazione validando sia la transizione (macchina
+   * a stati) sia il ruolo che la richiede. 'cassa' può eseguire ogni transizione.
+   */
+  async changeStato(
+    id: number,
+    nuovoStato: StatoPrenotazione,
+    ruolo: string,
+  ): Promise<Prenotazione> {
+    const prenotazione = await this.prisma.prenotazione.findUnique({
+      where: { id },
+    });
+
+    if (!prenotazione)
+      throw new NotFoundException(`Prenotazione ${id} non trovata`);
+
+    const regola = TRANSIZIONI[prenotazione.stato].find(
+      (t) => t.a === nuovoStato,
+    );
+
+    if (!regola) {
+      throw new BadRequestException(
+        `Transizione da ${prenotazione.stato} a ${nuovoStato} non consentita`,
+      );
+    }
+
+    if (ruolo !== 'cassa' && !regola.ruoli.includes(ruolo)) {
+      throw new ForbiddenException(
+        `Il ruolo '${ruolo}' non può portare la prenotazione in stato ${nuovoStato}`,
+      );
+    }
+
+    return await this.prisma.prenotazione.update({
+      where: { id },
+      data: { stato: nuovoStato },
+    });
+  }
+
   private async isModificabile(prenotazione: Prenotazione): Promise<void> {
     const fascia = await this.prisma.fasciaOraria.findUnique({
       where: { id: prenotazione.fasciaOrariaId },
@@ -240,8 +310,8 @@ export class PrenotazioniService {
         'Prenotazione non trovata o non è una prenotazione domiciliaria',
       );
 
-    const fattorino = await this.prisma.user.findUnique({
-      where: { id: fattorinoId, ruoloId: 4 },
+    const fattorino = await this.prisma.user.findFirst({
+      where: { id: fattorinoId, ruolo: { nome: 'fattorino' } },
     });
     if (!fattorino) throw new NotFoundException('Fattorino non trovato');
 
@@ -253,5 +323,3 @@ export class PrenotazioniService {
     return updated;
   }
 }
-
-

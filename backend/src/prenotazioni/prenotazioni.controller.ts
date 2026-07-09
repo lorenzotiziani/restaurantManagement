@@ -9,6 +9,8 @@ import {
   Delete,
   UseGuards,
   NotFoundException,
+  Req,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { PrenotazioniService } from './prenotazioni.service';
 import { CreatePrenotazioneDto } from './dto/create-prenotazioni.dto';
@@ -23,9 +25,13 @@ import {
   byUserSchema,
   assignFattorinoSchema,
   updatePagamentoSchema,
+  changeStatoSchema,
 } from './dto/prenotazioni.dto';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { JwtPayload } from 'src/auth/entities/auth.entity';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('prenotazioni')
 export class PrenotazioniController {
   constructor(
@@ -82,10 +88,10 @@ export class PrenotazioniController {
 
   @Get('fasce-orarie/available')
   async findAvailable(
-    @Body(new ZodValidationPipe(findAvailableSchema))
-    body: z.infer<typeof findAvailableSchema>,
+    @Query(new ZodValidationPipe(findAvailableSchema))
+    query: z.infer<typeof findAvailableSchema>,
   ) {
-    const orariAvailable = await this.fasceOrarieService.findAvailable(body);
+    const orariAvailable = await this.fasceOrarieService.findAvailable(query);
 
     return {
       success: true,
@@ -103,6 +109,7 @@ export class PrenotazioniController {
     };
   }
 
+  @Roles('cassa')
   @Post('assegnaFattorino')
   async assignFattorino(
     @Body(new ZodValidationPipe(assignFattorinoSchema))
@@ -148,7 +155,29 @@ export class PrenotazioniController {
     };
   }
 
+  // Transizione di stato (macchina a stati); il ruolo abilitato dipende dalla
+  // transizione ed è verificato nel service. Nessun @Roles statico qui.
+  @Patch(':id/stato')
+  async changeStato(
+    @Param('id', ParseIntPipe) id: number,
+    @Body(new ZodValidationPipe(changeStatoSchema))
+    body: z.infer<typeof changeStatoSchema>,
+    @Req() req: { user: JwtPayload },
+  ) {
+    const updated = await this.prenotazioniService.changeStato(
+      id,
+      body.stato,
+      req.user.ruolo,
+    );
+
+    return {
+      success: true,
+      data: updated,
+    };
+  }
+
   // a meno che non sia il prossimo giro quindi mancano - di 15 minuti
+  @Roles('cassa')
   @Patch(':id')
   async update(
     @Param('id') id: number,
@@ -165,6 +194,7 @@ export class PrenotazioniController {
     };
   }
 
+  @Roles('cassa')
   @Delete(':id')
   async remove(@Param('id') id: number) {
     const deleted = await this.prenotazioniService.remove(id);

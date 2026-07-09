@@ -1,4 +1,9 @@
 import z from 'zod';
+import { StatoPrenotazione } from '@prisma/client';
+
+export const changeStatoSchema = z.object({
+  stato: z.nativeEnum(StatoPrenotazione),
+});
 
 export const byUserSchema = z.object({
   nominativo: z.string().nonoptional(),

@@ -1,7 +1,7 @@
 import z from 'zod';
 
 export const findAvailableSchema = z.object({
-  numeroPizze: z.number().optional(),
+  numeroPizze: z.coerce.number().optional(),
   giorno: z.coerce.date().optional(),
   orarioDa: z
     .string()
