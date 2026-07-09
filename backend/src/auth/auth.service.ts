@@ -3,7 +3,6 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { PrismaService } from 'prisma/prisma.service';
 import { RegisterUserDto } from 'src/user/dto/create-user.dto';
 import { UserService } from 'src/user/user.service';
 import { JwtService } from '@nestjs/jwt';
@@ -14,7 +13,6 @@ import { JwtPayload } from './entities/auth.entity';
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
     private userService: UserService,
     private jwtService: JwtService,
     private refreshTokenService: RefreshTokenService,
@@ -62,8 +60,7 @@ export class AuthService {
       throw new UnauthorizedException('Credenziali errate');
     }
 
-    await this.refreshTokenService.revokeByUserId(user.id);
-
+    // Sessioni multiple: il login non revoca le altre sessioni dell'utente
     const { accessToken, refreshToken } = await this.generateTokens(user);
 
     await this.refreshTokenService.create({
@@ -146,12 +143,18 @@ export class AuthService {
   async generateTokens(user: {
     id: number;
     email: string;
-    role?: string | null;
+    ruoloId?: number | null;
+    ruolo?: { nome: string };
+    nome: string;
+    cognome: string;
   }) {
     const payload = {
-      sub: user.id,
+      userId: user.id,
       email: user.email,
-      role: user.role ?? '',
+      ruoloId: user.ruoloId,
+      ruolo: user.ruolo?.nome,
+      nome: user.nome,
+      cognome: user.cognome,
     };
 
     const accessToken = await this.jwtService.signAsync(payload);

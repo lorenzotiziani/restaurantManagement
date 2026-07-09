@@ -7,14 +7,19 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
+  Req,
+  ForbiddenException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ZodParamPipe } from 'src/common/pipes/zod-param-pipe';
 import z from 'zod';
 import { AuthGuard } from '@nestjs/passport';
+import { JwtPayload } from 'src/auth/entities/auth.entity';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -31,7 +36,7 @@ export class UserController {
 
   @Get('id/:id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
-    const one = await this.userService.findOne(id);
+    const one = await this.userService.findOneView(id);
 
     return {
       success: true,
@@ -55,7 +60,20 @@ export class UserController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
+    @Req() req: { user: JwtPayload },
   ) {
+    const requester = req.user;
+
+    // Un utente può modificare solo sé stesso, salvo che sia 'cassa' (gestore)
+    if (requester.userId !== id && requester.ruolo !== 'cassa') {
+      throw new ForbiddenException('Non puoi modificare un altro utente');
+    }
+
+    // Solo 'cassa' può cambiare il ruolo (blocca l'auto-promozione)
+    if (updateUserDto.ruoloId !== undefined && requester.ruolo !== 'cassa') {
+      throw new ForbiddenException('Non puoi modificare il ruolo');
+    }
+
     const updated = await this.userService.update(id, updateUserDto);
 
     return {
@@ -64,9 +82,10 @@ export class UserController {
     };
   }
 
+  @Roles('cassa')
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    const deleted = await this.userService.remove(+id);
+  async remove(@Param('id', ParseIntPipe) id: number) {
+    const deleted = await this.userService.remove(id);
 
     return {
       success: true,

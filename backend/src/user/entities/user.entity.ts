@@ -9,4 +9,14 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
   ruoloId: number;
+  ruolo?: { nome: string };
+}
+
+export interface userView {
+  id: number;
+  email: string;
+  nome: string;
+  cognome: string;
+  telefono: string;
+  ruolo: string;
 }

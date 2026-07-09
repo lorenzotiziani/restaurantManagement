@@ -33,14 +33,7 @@ export class AuthController {
   }
 
   @Post('logout')
-  logout(@Body() refreshToken: string) {
-    if (refreshToken) {
-      return this.authService.logout(refreshToken);
-    }
-
-    return {
-      success: true,
-      message: 'Logout effettuato con successo',
-    };
+  logout(@Body('refreshToken') refreshToken: string) {
+    return this.authService.logout(refreshToken);
   }
 }

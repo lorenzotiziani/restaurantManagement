@@ -6,10 +6,8 @@ export class RefreshTokenService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: { token: string; userId: number; expiresAt: Date }) {
-    await this.prisma.refreshToken.deleteMany({
-      where: { userId: data.userId },
-    });
-
+    // Sessioni multiple: NON cancelliamo i token esistenti dell'utente,
+    // così restano valide le sessioni sugli altri device.
     return this.prisma.refreshToken.create({
       data: {
         token: data.token,
@@ -24,7 +22,7 @@ export class RefreshTokenService {
   async findByToken(token: string) {
     return this.prisma.refreshToken.findFirst({
       where: {
-        token,
+        token: token,
         isRevoked: false,
         expiresAt: {
           gt: new Date(),
@@ -47,7 +45,7 @@ export class RefreshTokenService {
 
   async revokeByToken(token: string) {
     return this.prisma.refreshToken.updateMany({
-      where: { token },
+      where: { token: token },
       data: {
         isRevoked: true,
       },

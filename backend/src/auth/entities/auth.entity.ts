@@ -1,7 +1,10 @@
 export interface JwtPayload {
   userId: number;
   email: string;
-  role: string;
+  nome: string;
+  cognome: string;
+  ruoloId: number;
+  ruolo: string;
 }
 export interface RefreshToken {
   id: number;
