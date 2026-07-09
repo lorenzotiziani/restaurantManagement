@@ -13,8 +13,10 @@ import { MenuItemsService } from './menuItems.service';
 import { nuovoMenuItemsSchema } from './dto/menuItems.dto';
 import { ZodValidationPipe } from 'nestjs-zod';
 import z from 'zod';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('menu-items')
 export class MenuItemsController {
   constructor(private readonly menuItemsService: MenuItemsService) {}
@@ -29,6 +31,7 @@ export class MenuItemsController {
     };
   }
 
+  @Roles('cassa')
   @Post()
   async createMenuItems(
     @Body(new ZodValidationPipe(nuovoMenuItemsSchema))
@@ -42,6 +45,7 @@ export class MenuItemsController {
     };
   }
 
+  @Roles('cassa')
   @Patch(':id')
   async updateMenuItems(
     @Param('id') id: number,
@@ -55,6 +59,7 @@ export class MenuItemsController {
     };
   }
 
+  @Roles('cassa')
   @Delete(':id')
   async deleteMenuItems(@Param('id') id: number) {
     await this.menuItemsService.deleteMenuItem(id);

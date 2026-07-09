@@ -13,8 +13,11 @@ import { RuoliService } from './ruoli.service';
 import { nuovoRuoloSchema } from './dto/ruoli.dto';
 import { ZodValidationPipe } from 'nestjs-zod';
 import z from 'zod';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles('cassa')
 @Controller('ruoli')
 export class RuoliController {
   constructor(private readonly ruoliService: RuoliService) {}

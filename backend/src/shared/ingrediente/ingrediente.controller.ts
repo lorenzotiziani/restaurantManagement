@@ -13,8 +13,10 @@ import { IngredienteService } from './ingrediente.service';
 import { nuovoIngredienteSchema } from './dto/ingrediente.dto';
 import { ZodValidationPipe } from 'nestjs-zod';
 import z from 'zod';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('ingrediente')
 export class IngredienteController {
   constructor(private readonly ingredienteService: IngredienteService) {}
@@ -28,6 +30,7 @@ export class IngredienteController {
     };
   }
 
+  @Roles('cassa')
   @Post()
   async createIngrediente(
     @Body(new ZodValidationPipe(nuovoIngredienteSchema))
@@ -41,6 +44,7 @@ export class IngredienteController {
     };
   }
 
+  @Roles('cassa')
   @Patch(':id')
   async updateIngrediente(
     @Param('id') id: number,
@@ -54,6 +58,7 @@ export class IngredienteController {
     };
   }
 
+  @Roles('cassa')
   @Delete(':id')
   async deleteRuolo(@Param('id') id: number) {
     await this.ingredienteService.deleteIngrediente(id);
