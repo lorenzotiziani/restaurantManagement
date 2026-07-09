@@ -10,13 +10,14 @@ datasource db {
 // RUOLI E UTENTI
 // ─────────────────────────────────────────
 
-/* TODO: HO RIEMPITO IL DB CON DEI DATI, BISGONA PROVARE AD INIZIARE CON LE PRIME API CHE PERMETTONO L'ORDINAZIONE 
- * E CHE GESTISCONO EVENTUALI RIMOZIONI O ALTRO, VOGLIO AGGIUNGERE UNA METODOLOGIA TRAMITE AI DI ORDINARE LA PIZZA 
- * CHE METTE IN UN CERTO FORMATO L'ORDINAZIONE FATTA DALL'UTENTE IN MODO DA POTERLA GESTIRE COME SE FOSSE UN TXT 
+/**
+ * TODO: HO RIEMPITO IL DB CON DEI DATI, BISGONA PROVARE AD INIZIARE CON LE PRIME API CHE PERMETTONO L'ORDINAZIONE
+ * E CHE GESTISCONO EVENTUALI RIMOZIONI O ALTRO, VOGLIO AGGIUNGERE UNA METODOLOGIA TRAMITE AI DI ORDINARE LA PIZZA
+ * CHE METTE IN UN CERTO FORMATO L'ORDINAZIONE FATTA DALL'UTENTE IN MODO DA POTERLA GESTIRE COME SE FOSSE UN TXT
  */
 model Ruolo {
   id        Int      @id @default(autoincrement())
-  nome      String   @unique  // forno | cassa | fattorino | banco
+  nome      String   @unique // forno | cassa | fattorino | banco
   permessi  String[]
   createdAt DateTime @default(now())
 
@@ -38,7 +39,7 @@ model User {
   ruolo   Ruolo @relation(fields: [ruoloId], references: [id])
 
   prenotazioniAssegnate Prenotazione[] @relation("FattorinoPrenotazioni")
-  refreshTokens         RefreshToken[] 
+  refreshTokens         RefreshToken[]
 }
 
 model RefreshToken {
@@ -51,6 +52,7 @@ model RefreshToken {
 
   user User @relation(fields: [userId], references: [id])
 }
+
 // ─────────────────────────────────────────
 // MENU
 // ─────────────────────────────────────────
@@ -83,13 +85,13 @@ enum CategoriaMenu {
 model Ingrediente {
   id          Int      @id @default(autoincrement())
   nome        String   @unique
-  prezzo      Decimal  @db.Decimal(10, 2) @default(0)
+  prezzo      Decimal  @default(0) @db.Decimal(10, 2)
   disponibile Boolean  @default(true)
   createdAt   DateTime @default(now())
 
-  menuItems  MenuItemIngredienti[]
-  aggiunte   OrdineItemAggiunta[]
-  rimozioni  OrdineItemRimozione[]
+  menuItems MenuItemIngredienti[]
+  aggiunte  OrdineItemAggiunta[]
+  rimozioni OrdineItemRimozione[]
 }
 
 // Tabella ponte: ingredienti di default di una pizza nel menu
@@ -120,31 +122,31 @@ model FasciaOraria {
 // ─────────────────────────────────────────
 
 model Prenotazione {
-  id                    Int               @id @default(autoincrement())
-  nominativo            String
-  telefono              String
-  modalita              ModalitaConsegna
-  stato                 StatoPrenotazione @default(RICEVUTA)
-  note                  String?
-  totale                Decimal           @db.Decimal(10, 2)
-  giornoPrenotazione    DateTime
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
+  id                 Int               @id @default(autoincrement())
+  nominativo         String
+  telefono           String
+  modalita           ModalitaConsegna
+  stato              StatoPrenotazione @default(RICEVUTA)
+  note               String?
+  totale             Decimal           @db.Decimal(10, 2)
+  giornoPrenotazione DateTime
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
 
   // Indirizzo (solo se modalita = DOMICILIO)
-  via                   String?
-  civico                String?
-  citta                 String?
-  noteIndirizzo         String?
+  via           String?
+  civico        String?
+  citta         String?
+  noteIndirizzo String?
 
-  fasciaOrariaId        Int
-  fasciaOraria          FasciaOraria @relation(fields: [fasciaOrariaId], references: [id])
+  fasciaOrariaId Int
+  fasciaOraria   FasciaOraria @relation(fields: [fasciaOrariaId], references: [id])
 
-  fattorinoId           Int?
-  fattorino             User? @relation("FattorinoPrenotazioni", fields: [fattorinoId], references: [id])
+  fattorinoId Int?
+  fattorino   User? @relation("FattorinoPrenotazioni", fields: [fattorinoId], references: [id])
 
-  pagamento             Pagamento?
-  items                 OrdineItem[]
+  pagamento Pagamento?
+  items     OrdineItem[]
 }
 
 enum ModalitaConsegna {
@@ -166,9 +168,9 @@ enum StatoPrenotazione {
 // ─────────────────────────────────────────
 
 model OrdineItem {
-  id                Int           @id @default(autoincrement())
-  quantita          Int           @default(1)
-  note              String?
+  id       Int     @id @default(autoincrement())
+  quantita Int     @default(1)
+  note     String?
 
   // Snapshot al momento dell'ordine
   nomeSnapshot      String
@@ -187,11 +189,11 @@ model OrdineItem {
 
 // Ingredienti aggiunti rispetto alla pizza base
 model OrdineItemAggiunta {
-  id             Int         @id @default(autoincrement())
-  prezzoSnapshot Decimal     @db.Decimal(10, 2)
+  id             Int     @id @default(autoincrement())
+  prezzoSnapshot Decimal @db.Decimal(10, 2)
 
-  ordineItemId  Int
-  ordineItem    OrdineItem  @relation(fields: [ordineItemId], references: [id], onDelete: Cascade)
+  ordineItemId Int
+  ordineItem   OrdineItem @relation(fields: [ordineItemId], references: [id], onDelete: Cascade)
 
   ingredienteId Int
   ingrediente   Ingrediente @relation(fields: [ingredienteId], references: [id])
@@ -201,8 +203,8 @@ model OrdineItemAggiunta {
 model OrdineItemRimozione {
   id Int @id @default(autoincrement())
 
-  ordineItemId  Int
-  ordineItem    OrdineItem  @relation(fields: [ordineItemId], references: [id], onDelete: Cascade)
+  ordineItemId Int
+  ordineItem   OrdineItem @relation(fields: [ordineItemId], references: [id], onDelete: Cascade)
 
   ingredienteId Int
   ingrediente   Ingrediente @relation(fields: [ingredienteId], references: [id])
@@ -227,4 +229,16 @@ enum MetodoPagamento {
   CONTANTI
   CARTA
   ONLINE
+}
+
+// view prisma
+model UtenteRuoloView {
+  id       Int    @id
+  nome     String
+  cognome  String
+  email    String
+  telefono String
+  ruolo    String
+
+  @@map("utenteruoloview")
 }
