@@ -29,7 +29,7 @@ import {
 } from './dto/prenotazioni.dto';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { JwtPayload } from 'src/auth/entities/auth.entity';
+import { JwtPayload } from 'src/auth/entities/refreshToken.entity';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('prenotazioni')

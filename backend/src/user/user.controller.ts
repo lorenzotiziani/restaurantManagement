@@ -15,7 +15,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { ZodParamPipe } from 'src/common/pipes/zod-param-pipe';
 import z from 'zod';
 import { AuthGuard } from '@nestjs/passport';
-import { JwtPayload } from 'src/auth/entities/auth.entity';
+import { JwtPayload } from 'src/auth/entities/refreshToken.entity';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 
