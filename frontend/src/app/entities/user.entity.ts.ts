@@ -1,9 +1,13 @@
 export type User = {
-    id: string;
-    email: string;
-    password:string;
-    nome: string;
-    cognome: string;
-    isActive: boolean;
+  id: number;
+  email: string;
+  password: string;
+  nome: string;
+  cognome: string;
+  telefono: string;
+  attivo: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  ruoloId: number;
 };
 

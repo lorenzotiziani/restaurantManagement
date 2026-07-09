@@ -10,8 +10,18 @@ import {ChartConfiguration, ChartType} from "chart.js";
 })
 export class HomeComponent {
   isGraph:boolean = true;
+  username: string = '';
+  ruoloId: number = 0;
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) {
+    this.authService.currentUser$.subscribe(user => {
+      if (user) {
+        this.username = user.nome + ' ' + user.cognome;
+        this.ruoloId = user.ruoloId;
+      }
+    });
+
+  }
 
   logout() {
     this.authService.logout().subscribe({
