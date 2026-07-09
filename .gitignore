@@ -12,10 +12,6 @@
 /frontend/dist/
 /frontend/.cache/
 /frontend/proxy.conf.json
-/frontend/tsconfig.app.json
-/frontend/tsconfig.json
-/frontend/tsconfig.spec.json
-/frontend/package-lock.json
 
 # Backend
 /backend/node_modules/
