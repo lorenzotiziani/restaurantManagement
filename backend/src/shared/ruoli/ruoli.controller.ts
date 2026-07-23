@@ -10,9 +10,8 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RuoliService } from './ruoli.service';
-import { nuovoRuoloSchema } from './dto/ruoli.dto';
+import { nuovoRuoloDto } from './dto/ruoli.dto';
 import { ZodValidationPipe } from 'nestjs-zod';
-import z from 'zod';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 
@@ -33,8 +32,8 @@ export class RuoliController {
 
   @Post()
   async createRuolo(
-    @Body(new ZodValidationPipe(nuovoRuoloSchema))
-    body: z.infer<typeof nuovoRuoloSchema>,
+    @Body(new ZodValidationPipe(nuovoRuoloDto))
+    body: nuovoRuoloDto,
   ) {
     const nuovoRuolo = await this.ruoliService.addRuolo(body);
 
@@ -47,8 +46,8 @@ export class RuoliController {
   @Patch(':id')
   async updateRuolo(
     @Param('id') id: number,
-    @Body(new ZodValidationPipe(nuovoRuoloSchema))
-    body: z.infer<typeof nuovoRuoloSchema>,
+    @Body(new ZodValidationPipe(nuovoRuoloDto))
+    body: nuovoRuoloDto,
   ) {
     const updated = await this.ruoliService.updateRuolo(id, body);
     return {

@@ -3,7 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { RegisterUserDto } from 'src/user/dto/create-user.dto';
+import { RegisterUserDto, LoginDto } from './dto/auth.dto';
 import { UserService } from 'src/user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -43,8 +43,8 @@ export class AuthService {
     };
   }
 
-  async login(email: string, pass: string) {
-    const user = await this.userService.findByEmail(email);
+  async login(dto: LoginDto) {
+    const user = await this.userService.findByEmail(dto.email);
 
     if (!user) {
       throw new UnauthorizedException('Credenziali errate');
@@ -54,7 +54,7 @@ export class AuthService {
       throw new UnauthorizedException('Account non attivato');
     }
 
-    const isMatch = await bcrypt.compare(pass, user.password);
+    const isMatch = await bcrypt.compare(dto.password, user.password);
 
     if (!isMatch) {
       throw new UnauthorizedException('Credenziali errate');

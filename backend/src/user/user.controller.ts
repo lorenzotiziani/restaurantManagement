@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Body,
+  Query,
   Patch,
   Param,
   Delete,
@@ -13,7 +14,8 @@ import {
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ZodParamPipe } from 'src/common/pipes/zod-param-pipe';
-import z from 'zod';
+import { ZodValidationPipe } from 'nestjs-zod';
+import { z } from 'zod';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtPayload } from 'src/auth/entities/refreshToken.entity';
 import { RolesGuard } from 'src/common/guards/roles.guard';
@@ -46,20 +48,27 @@ export class UserController {
 
   @Get('email')
   async findByEmail(
-    @Body('email', new ZodParamPipe(z.string().email())) email: string,
+    @Query('email', new ZodParamPipe(z.string().email())) email: string,
   ) {
-    const byEmail = await this.userService.findByEmail(email);
+    const user = await this.userService.findByEmail(email);
+
+    if (!user) {
+      return { success: true, data: null };
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userSafe } = user;
 
     return {
       success: true,
-      data: byEmail,
+      data: userSafe,
     };
   }
 
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateUserDto: UpdateUserDto,
+    @Body(new ZodValidationPipe(UpdateUserDto)) updateUserDto: UpdateUserDto,
     @Req() req: { user: JwtPayload },
   ) {
     const requester = req.user;

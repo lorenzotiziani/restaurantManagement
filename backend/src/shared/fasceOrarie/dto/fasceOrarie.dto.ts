@@ -1,3 +1,4 @@
+import { createZodDto } from 'nestjs-zod';
 import z from 'zod';
 
 export const findAvailableSchema = z.object({
@@ -9,4 +10,4 @@ export const findAvailableSchema = z.object({
     .optional(),
 });
 
-export type FindAvailableDto = z.infer<typeof findAvailableSchema>;
+export class FindAvailableDto extends createZodDto(findAvailableSchema) {}

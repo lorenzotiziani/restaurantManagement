@@ -53,6 +53,8 @@ export class UserService {
     return user;
   }
 
+  // Ritorna l'utente COMPLETO (password inclusa): serve all'auth per il
+  // confronto bcrypt. Chi la espone via HTTP deve rimuovere la password.
   async findByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findFirst({
       where: { email: email.toLowerCase() },

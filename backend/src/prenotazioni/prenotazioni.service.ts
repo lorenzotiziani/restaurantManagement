@@ -4,8 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreatePrenotazioneDto } from './dto/create-prenotazioni.dto';
-import { UpdatePrenotazioniDto } from './dto/update-prenotazioni.dto';
+import {
+  CreatePrenotazioneDto,
+  UpdatePrenotazioniDto,
+} from './dto/create-prenotazioni.dto';
 import { PrismaService } from 'prisma/prisma.service';
 import { Prenotazione, StatoPrenotazione } from '@prisma/client';
 
@@ -43,7 +45,6 @@ export class PrenotazioniService {
   constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    // Le prenotazioni annullate (soft delete) sono escluse dalla lista
     return await this.prisma.prenotazione.findMany({
       where: { stato: { not: 'ANNULLATA' } },
     });
@@ -104,10 +105,8 @@ export class PrenotazioniService {
           `MenuItem ${item.menuItemId} non trovato`,
         );
 
-      // prezzo base * quantità
       totale += Number(menuItem.prezzo) * item.quantita;
 
-      // aggiungi costo delle aggiunte
       for (const aggiunta of item.aggiunte ?? []) {
         const ingrediente = await this.prisma.ingrediente.findUnique({
           where: { id: aggiunta.ingredienteId },
@@ -192,8 +191,6 @@ export class PrenotazioniService {
 
     await this.isModificabile(prenotazione);
 
-    // Estrai solo i campi scalari, escludi pagamento e items
-    // Lo stato NON è modificabile qui: le transizioni passano da changeStato()
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { pagamento, items, stato, ...others } = dto;
 
@@ -264,7 +261,7 @@ export class PrenotazioniService {
 
     if (!regola) {
       throw new BadRequestException(
-        `Transizione da ${prenotazione.stato} a ${nuovoStato} non consentita`,
+        `Transizione da ${prenotazione.stato} a ${nuovoStato} non consentita perche' sei >${ruolo}<`,
       );
     }
 

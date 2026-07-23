@@ -32,13 +32,4 @@ export const CreateUserSchema = UserBaseSchema.omit({
   confirmPassword: true,
 });
 
-export const RegisterUserSchema = UserBaseSchema.refine(
-  (data) => data.password === data.confirmPassword,
-  {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  },
-);
-
 export class CreateUserDto extends createZodDto(CreateUserSchema) {}
-export class RegisterUserDto extends createZodDto(RegisterUserSchema) {}

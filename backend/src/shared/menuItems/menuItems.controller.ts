@@ -10,9 +10,8 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { MenuItemsService } from './menuItems.service';
-import { nuovoMenuItemsSchema } from './dto/menuItems.dto';
+import { nuovoMenuItemsDto } from './dto/menuItems.dto';
 import { ZodValidationPipe } from 'nestjs-zod';
-import z from 'zod';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 
@@ -34,8 +33,8 @@ export class MenuItemsController {
   @Roles('cassa')
   @Post()
   async createMenuItems(
-    @Body(new ZodValidationPipe(nuovoMenuItemsSchema))
-    body: z.infer<typeof nuovoMenuItemsSchema>,
+    @Body(new ZodValidationPipe(nuovoMenuItemsDto))
+    body: nuovoMenuItemsDto,
   ) {
     const nuovoMenuItems = await this.menuItemsService.addMenuItem(body);
 
@@ -49,8 +48,8 @@ export class MenuItemsController {
   @Patch(':id')
   async updateMenuItems(
     @Param('id') id: number,
-    @Body(new ZodValidationPipe(nuovoMenuItemsSchema))
-    body: z.infer<typeof nuovoMenuItemsSchema>,
+    @Body(new ZodValidationPipe(nuovoMenuItemsDto))
+    body: nuovoMenuItemsDto,
   ) {
     const updated = await this.menuItemsService.updateMenuItem(id, body);
     return {

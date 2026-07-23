@@ -13,19 +13,20 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { PrenotazioniService } from './prenotazioni.service';
-import { CreatePrenotazioneDto } from './dto/create-prenotazioni.dto';
-import type { UpdatePrenotazioniDto } from './dto/update-prenotazioni.dto';
+import {
+  CreatePrenotazioneDto,
+  UpdatePrenotazioniDto,
+} from './dto/create-prenotazioni.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { ZodValidationPipe } from 'nestjs-zod';
-import { findAvailableSchema } from '../shared/fasceOrarie/dto/fasceOrarie.dto';
+import { FindAvailableDto } from '../shared/fasceOrarie/dto/fasceOrarie.dto';
 import { FasceOrarieService } from 'src/shared/fasceOrarie/fasceOrarie.service';
 import { PagamentoService } from 'src/shared/pagamento/pagamento.service';
-import z from 'zod';
 import {
-  byUserSchema,
-  assignFattorinoSchema,
-  updatePagamentoSchema,
-  changeStatoSchema,
+  byUserDto,
+  assignFattorinoDto,
+  updatePagamentoDto,
+  changeStatoDto,
 } from './dto/prenotazioni.dto';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -55,8 +56,8 @@ export class PrenotazioniController {
   //tutte le prenotazioni dell'utente come "storico"
   @Get('getHistory')
   async findByUserID(
-    @Query(new ZodValidationPipe(byUserSchema))
-    query: z.infer<typeof byUserSchema>,
+    @Query(new ZodValidationPipe(byUserDto))
+    query: byUserDto,
   ) {
     const byUserIdentity = await this.prenotazioniService.findMany(
       query.nominativo,
@@ -72,8 +73,8 @@ export class PrenotazioniController {
   //l'ultima prenotazione per quell'utente
   @Get('lastReservation')
   async findLastByUserId(
-    @Query(new ZodValidationPipe(byUserSchema))
-    query: z.infer<typeof byUserSchema>,
+    @Query(new ZodValidationPipe(byUserDto))
+    query: byUserDto,
   ) {
     const last = await this.prenotazioniService.findLast(
       query.nominativo,
@@ -88,8 +89,8 @@ export class PrenotazioniController {
 
   @Get('fasce-orarie/available')
   async findAvailable(
-    @Query(new ZodValidationPipe(findAvailableSchema))
-    query: z.infer<typeof findAvailableSchema>,
+    @Query(new ZodValidationPipe(FindAvailableDto))
+    query: FindAvailableDto,
   ) {
     const orariAvailable = await this.fasceOrarieService.findAvailable(query);
 
@@ -112,8 +113,8 @@ export class PrenotazioniController {
   @Roles('cassa')
   @Post('assegnaFattorino')
   async assignFattorino(
-    @Body(new ZodValidationPipe(assignFattorinoSchema))
-    body: z.infer<typeof assignFattorinoSchema>,
+    @Body(new ZodValidationPipe(assignFattorinoDto))
+    body: assignFattorinoDto,
   ) {
     const { prenotazioneId, fattorinoId } = body;
 
@@ -129,10 +130,11 @@ export class PrenotazioniController {
   }
 
   @Post()
-  async create(@Body() createPrenotazioniDto: CreatePrenotazioneDto) {
-    const newPrenotazione = await this.prenotazioniService.create(
-      createPrenotazioniDto,
-    );
+  async create(
+    @Body(new ZodValidationPipe(CreatePrenotazioneDto))
+    body: CreatePrenotazioneDto,
+  ) {
+    const newPrenotazione = await this.prenotazioniService.create(body);
 
     return {
       success: true,
@@ -142,12 +144,16 @@ export class PrenotazioniController {
 
   @Patch('pagamento/update')
   async updatePagamento(
-    @Body(new ZodValidationPipe(updatePagamentoSchema))
-    body: z.infer<typeof updatePagamentoSchema>,
+    @Body(new ZodValidationPipe(updatePagamentoDto))
+    body: updatePagamentoDto,
   ) {
-    const { prenotazioneId } = body;
+    const { prenotazioneId, pagato, metodo } = body;
 
-    const updated = await this.pagamentoService.updatePagamento(prenotazioneId);
+    const updated = await this.pagamentoService.updatePagamento(
+      prenotazioneId,
+      pagato,
+      metodo,
+    );
 
     return {
       success: true,
@@ -155,13 +161,15 @@ export class PrenotazioniController {
     };
   }
 
-  // Transizione di stato (macchina a stati); il ruolo abilitato dipende dalla
-  // transizione ed è verificato nel service. Nessun @Roles statico qui.
+  /* 
+    Transizione di stato (macchina a stati); il ruolo abilitato dipende dalla
+    transizione ed è verificato nel service. Nessun @Roles statico qui.
+  */
   @Patch(':id/stato')
   async changeStato(
     @Param('id', ParseIntPipe) id: number,
-    @Body(new ZodValidationPipe(changeStatoSchema))
-    body: z.infer<typeof changeStatoSchema>,
+    @Body(new ZodValidationPipe(changeStatoDto))
+    body: changeStatoDto,
     @Req() req: { user: JwtPayload },
   ) {
     const updated = await this.prenotazioniService.changeStato(
@@ -181,12 +189,10 @@ export class PrenotazioniController {
   @Patch(':id')
   async update(
     @Param('id') id: number,
-    @Body() updatePrenotazioniDto: UpdatePrenotazioniDto,
+    @Body(new ZodValidationPipe(UpdatePrenotazioniDto))
+    body: UpdatePrenotazioniDto,
   ) {
-    const updated = await this.prenotazioniService.update(
-      +id,
-      updatePrenotazioniDto,
-    );
+    const updated = await this.prenotazioniService.update(id, body);
 
     return {
       success: true,
