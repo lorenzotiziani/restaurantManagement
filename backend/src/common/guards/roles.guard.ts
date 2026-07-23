@@ -13,13 +13,11 @@ export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    // Ruoli richiesti dalla rotta o dal controller; il livello di rotta ha priorità
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(
       ROLES_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    // Nessun @Roles → rotta aperta a qualsiasi utente autenticato
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }

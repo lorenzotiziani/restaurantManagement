@@ -1,3 +1,4 @@
+import { createZodDto } from 'nestjs-zod';
 import z from 'zod';
 
 export const nuovoIngredienteSchema = z.object({
@@ -6,4 +7,4 @@ export const nuovoIngredienteSchema = z.object({
   diponibile: z.boolean().nonoptional(),
 });
 
-export type nuovoIngredienteDto = z.infer<typeof nuovoIngredienteSchema>;
+export class nuovoIngredienteDto extends createZodDto(nuovoIngredienteSchema) {}

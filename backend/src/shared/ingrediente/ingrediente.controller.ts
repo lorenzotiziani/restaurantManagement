@@ -10,9 +10,8 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { IngredienteService } from './ingrediente.service';
-import { nuovoIngredienteSchema } from './dto/ingrediente.dto';
+import { nuovoIngredienteDto } from './dto/ingrediente.dto';
 import { ZodValidationPipe } from 'nestjs-zod';
-import z from 'zod';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 
@@ -33,8 +32,8 @@ export class IngredienteController {
   @Roles('cassa')
   @Post()
   async createIngrediente(
-    @Body(new ZodValidationPipe(nuovoIngredienteSchema))
-    body: z.infer<typeof nuovoIngredienteSchema>,
+    @Body(new ZodValidationPipe(nuovoIngredienteDto))
+    body: nuovoIngredienteDto,
   ) {
     const nuovoIngrediente = await this.ingredienteService.addIngrediente(body);
 
@@ -48,8 +47,8 @@ export class IngredienteController {
   @Patch(':id')
   async updateIngrediente(
     @Param('id') id: number,
-    @Body(new ZodValidationPipe(nuovoIngredienteSchema))
-    body: z.infer<typeof nuovoIngredienteSchema>,
+    @Body(new ZodValidationPipe(nuovoIngredienteDto))
+    body: nuovoIngredienteDto,
   ) {
     const updated = await this.ingredienteService.updateIngrediente(id, body);
     return {

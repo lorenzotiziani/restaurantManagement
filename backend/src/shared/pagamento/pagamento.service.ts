@@ -4,13 +4,18 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
+import { MetodoPagamento } from '@prisma/client';
 
 @Injectable()
 export class PagamentoService {
   constructor(private prisma: PrismaService) {}
 
   //PAGAMENTO
-  async updatePagamento(prenotazioneId: number) {
+  async updatePagamento(
+    prenotazioneId: number,
+    pagato?: boolean,
+    metodo?: MetodoPagamento,
+  ) {
     const prenotazione = await this.prisma.prenotazione.findUnique({
       where: { id: prenotazioneId },
       include: { pagamento: true },
@@ -30,7 +35,8 @@ export class PagamentoService {
       data: {
         pagamento: {
           update: {
-            pagato: true,
+            pagato,
+            metodo,
           },
         },
       },

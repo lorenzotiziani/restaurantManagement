@@ -1,11 +1,8 @@
+import { StatoPrenotazione } from '@prisma/client';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-const OrdineItemAggiuntaSchema = z.object({
-  ingredienteId: z.number().positive(),
-});
-
-const OrdineItemRimozioneSchema = z.object({
+const OrdineItemIngredientiSchema = z.object({
   ingredienteId: z.number().positive(),
 });
 
@@ -13,8 +10,8 @@ const OrdineItemSchema = z.object({
   menuItemId: z.number().positive(),
   quantita: z.number().positive().default(1),
   note: z.string().optional(),
-  aggiunte: z.array(OrdineItemAggiuntaSchema).optional().default([]),
-  rimozioni: z.array(OrdineItemRimozioneSchema).optional().default([]),
+  aggiunte: z.array(OrdineItemIngredientiSchema).optional().default([]),
+  rimozioni: z.array(OrdineItemIngredientiSchema).optional().default([]),
 });
 
 const PagamentoSchema = z.object({
@@ -25,14 +22,7 @@ export const prenotazioneSchema = z.object({
   nominativo: z.string().min(1),
   telefono: z.string().min(1),
   modalita: z.enum(['ASPORTO', 'DOMICILIO']),
-  stato: z.enum([
-    'RICEVUTA',
-    'IN_LAVORAZIONE',
-    'PRONTA',
-    'IN_CONSEGNA',
-    'CONSEGNATA',
-    'ANNULLATA',
-  ]),
+  stato: z.enum(StatoPrenotazione),
   note: z.string().optional(),
   giornoPrenotazione: z.coerce.date(),
   fasciaOrariaId: z.number().positive(),
@@ -46,4 +36,9 @@ export const prenotazioneSchema = z.object({
   items: z.array(OrdineItemSchema).min(1),
 });
 
+export const UpdatePrenotazioneSchema = prenotazioneSchema.partial();
+
 export class CreatePrenotazioneDto extends createZodDto(prenotazioneSchema) {}
+export class UpdatePrenotazioniDto extends createZodDto(
+  UpdatePrenotazioneSchema,
+) {}
