@@ -12,7 +12,6 @@ import { AuthGuard } from '@nestjs/passport';
 import { RuoliService } from './ruoli.service';
 import { nuovoRuoloDto } from './dto/ruoli.dto';
 import { ZodValidationPipe } from 'nestjs-zod';
-import z from 'zod';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 
